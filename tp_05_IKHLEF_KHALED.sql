@@ -165,9 +165,82 @@ WHERE
 -- 	Requêtes plus difficiles (facultatives)
 
 -- a. Sélectionnez les articles qui ont une désignation identique mais des fournisseurs différents (indice : réaliser une auto jointure i.e. de la table avec elle-même)
+SELECT
+	a1.ID,
+	a1.REF,
+	a1.DESIGNATION,
+	a1.PRIX,
+	a1.ID_FOU
+FROM
+	article AS a1
+	JOIN article AS a2 ON a1.DESIGNATION = a2.DESIGNATION 
+	AND a1.ID_FOU != a2.ID_FOU 
+WHERE
+	a1.ID != a2.ID
 
 -- b. Calculez les dépenses en commandes mois par mois (indice : utilisation des fonctions MONTH et YEAR)
+SELECT
+CASE
+	MONTH
+		( DATE_CMDE ) 
+		WHEN 1 THEN
+		'janvier' 
+		WHEN 2 THEN
+		'février' 
+		WHEN 3 THEN
+		'mars' 
+		WHEN 4 THEN
+		'avril' 
+		WHEN 5 THEN
+		'mai' 
+		WHEN 6 THEN
+		'juin' 
+		WHEN 7 THEN
+		'juillet' 
+		WHEN 8 THEN
+		'août' 
+		WHEN 9 THEN
+		'septembre' 
+		WHEN 10 THEN
+		'octobre' 
+		WHEN 11 THEN
+		'novembre' ELSE 'décembre' 
+	END AS "MOIS",
+	YEAR ( b.DATE_CMDE ) AS "ANNÉE",
+	SUM( a.PRIX * c.QTE ) AS "DÉPENSES" 
+FROM
+	compo AS c
+	LEFT JOIN article AS a ON c.ID_ART = a.ID
+	LEFT JOIN bon AS b ON c.ID_BON = b.ID 
+GROUP BY
+	MONTH ( DATE_CMDE ),
+	YEAR ( DATE_CMDE ) 
+ORDER BY
+	MONTH ( DATE_CMDE ),
+	YEAR (
+	DATE_CMDE)
 
 -- c. Sélectionnez les bons de commandes sans article (indice : utilisation de EXISTS)
+SELECT
+    b.NUMERO AS "NUMÉRO de BON",
+    b.DATE_CMDE AS "DATE de COMMANDE"
+FROM
+    bon AS b
+WHERE
+    NOT EXISTS (
+        SELECT *
+        FROM compo AS c
+        WHERE c.ID_BON = b.ID
+    );
 
 -- d. Calculez le prix moyen des bons de commande par fournisseur.
+SELECT
+	f.NOM,
+	SUM( a.PRIX * c.QTE ) / COUNT( DISTINCT b.NUMERO ) AS "PRIX MOYEN BONS" 
+FROM
+	compo AS c
+	LEFT JOIN article AS a ON c.ID_ART = a.ID
+	RIGHT JOIN bon AS b ON c.ID_BON = b.ID
+	LEFT JOIN fournisseur AS f ON b.ID_FOU = f.ID 
+GROUP BY
+	f.NOM
